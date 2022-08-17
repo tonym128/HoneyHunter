@@ -5,7 +5,9 @@
   "builds": [
     {
       "chipFamily": "ESP32",
-      "parts": [{ "path": "firmware/honeyhunter.bin", "offset": 0 }]
+      "parts": [{ "path": "firmware/partitions.bin", "offset": 32768 },
+                { "path": "firmware/honeyhunter.bin", "offset": 65536 },
+                { "path": "firmware/spiffs.bin", "offset": 2686976 }]
     }
   ]
 }
