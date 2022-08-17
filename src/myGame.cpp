@@ -56,10 +56,10 @@ uint8_t boredCounter = 0;
 bool firstRun = true;
 bool myGameLoop(GameBuff *gameBuff)
 {
-   int val = hallRead();
-   char hall[30];
-   sprintf(hall, "Sensor : %d", val);
-   Serial.println(val);
+//    int val = hallRead();
+//    char hall[30];
+//    sprintf(hall, "Sensor : %d", val);
+//    Serial.println(val);
 	if (gameBuff->enter)
 	{
 		switch (gameBuff->gameMode)
