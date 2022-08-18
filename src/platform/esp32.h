@@ -292,7 +292,12 @@ void gameInit()
   if (!SPIFFS.begin(true))
   {
     Serial.println("Mount Failed");
-    SPIFFS.format();
+    bool formatted = SPIFFS.format();
+    while (!formatted) {
+      Serial.println("Failed formatted");
+      formatted = SPIFFS.format();
+      gameSleep(1000);
+    }
     Serial.println("File formatted");
     return;
   }
