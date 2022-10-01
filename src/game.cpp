@@ -113,7 +113,7 @@ void gameSetup()
     gameBuff->badgeState->bootMenuItem = 2;
   } 
 
-  gameBuff->gameMode = gameBuff->badgeState->bootMenuItem; // Boot into boot menu item
+  gameBuff->gameMode = gameBuff->badgeState->bootMenuItem == 1 ? 1 : 2; // Boot into boot menu item
 #endif
 
 }
