@@ -182,8 +182,6 @@ static void showLogo(const uint8_t logo[], GameBuff *gameBuff);
 static int bitExtracted(int number, int k, int p);
 static bool fadeToBlack(GameBuff *gameBuff);
 static bool fadeToWhite(GameBuff *gameBuff);
-void saveBadgeSettings(BadgeState *state);
-BadgeState *loadBadgeSettings();
 
 // Input
 static bool processKey(byte buttonVals, int key)

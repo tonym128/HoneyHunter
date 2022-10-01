@@ -67,72 +67,6 @@ bool displayImage(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap
   return true;
 }
 
-BadgeState *loadBadgeSettings()
-{
-  JSON_Value *user_data;
-  char *fileData = gameLoadFile((char*)"Badge.json");
-  user_data = json_parse_string(fileData);
-  free(fileData);
-
-  if (user_data == nullptr || user_data == NULL)
-  {
-    return nullptr;
-  }
-
-  BadgeState *state = (BadgeState *)malloc(sizeof(struct BadgeState));
-  state->bt_addr = (char *)json_object_get_string(json_object(user_data), (char*)"bt_addr");
-
-  // state->ssid = (char *)json_object_get_string(json_object(user_data), (char*)"ssid");
-  // ssid = state->ssid;
-
-  // state->password = (char *)json_object_get_string(json_object(user_data), (char*)"password");
-  // password = state->password;
-
-  if (json_object_has_value(json_object(user_data), (char*)"customBoot")) {
-    state->customBoot = (bool)json_object_get_boolean(json_object(user_data), (char*)"customBoot");
-    state->bootMenuItem = (int)json_object_get_number(json_object(user_data), (char*)"bootMenuItem");
-  } else {
-    state->customBoot = false;
-    state->bootMenuItem = 0;
-  }
-
-  free(user_data);
-
-  // Try to load Badge Name
-  fileData = gameLoadFile((char*)"Name.json");
-  user_data = json_parse_string(fileData);
-  free(fileData);
-
-  if (user_data != NULL)
-  {
-    state->name = (char *)json_object_get_string(json_object(user_data), (char*)"name");
-    free(user_data);
-  }
-  else
-  {
-    state->name = (char *)DEVICE;
-  }
-
-  return state;
-}
-
-void saveBadgeSettings(BadgeState *state)
-{
-  JSON_Value *root_value = json_value_init_object();
-  JSON_Object *root_object = json_value_get_object(root_value);
-  json_object_set_string(root_object, "bt_addr", state->bt_addr);
-  json_object_set_string(root_object, "ssid", state->ssid);
-  json_object_set_string(root_object, "password", state->password);
-  json_object_set_boolean(root_object, "customBoot", state->customBoot);
-  json_object_set_number(root_object, "bootMenuItem", (double)state->bootMenuItem);
-  char *stateString = json_serialize_to_string_pretty(root_value);
-
-  gameSaveFile((char*)"Badge.json", stateString);
-  json_free_serialized_string(stateString);
-  json_value_free(root_value);
-}
-
-
 void gameSetup()
 {
   if (gameBuff == nullptr)
@@ -147,7 +81,6 @@ void gameSetup()
 
   if (gameBuff->badgeState == nullptr || gameBuff->badgeState == NULL)
   {
-    gameBuff->badgeState = loadBadgeSettings();
 
     if (gameBuff->badgeState == nullptr || gameBuff->badgeState == NULL)
     {
@@ -159,9 +92,6 @@ void gameSetup()
       gameBuff->badgeState->customBoot = false;
       gameBuff->badgeState->bootMenuItem = 1; // Default to be game
 
-      saveBadgeSettings(gameBuff->badgeState);
-      gameBuff->badgeState = loadBadgeSettings();
-      // It reboots after this if there isn't enough free memory to alloc the consoleBuffer, but that's fine it'll have the file on 2nd boot.
     }
   }
 
@@ -177,17 +107,11 @@ void gameSetup()
   int wakeup = print_wakeup_reason();
   if (wakeup == ESP_SLEEP_WAKEUP_UNDEFINED)
   {
-    if (gameBuff->badgeState->bootMenuItem == 2)
-    {
-      gameBuff->badgeState->bootMenuItem = 1;
-    }
-    else
-    {
-      gameBuff->badgeState->bootMenuItem = 2;
-    }
-
-    saveBadgeSettings(gameBuff->badgeState);
+    gameBuff->badgeState->bootMenuItem = 1;
   }
+  else {
+    gameBuff->badgeState->bootMenuItem = 2;
+  } 
 
   gameBuff->gameMode = gameBuff->badgeState->bootMenuItem; // Boot into boot menu item
 #endif
@@ -259,18 +183,18 @@ void gameLoop()
     gameSetup();
   }
 
-	voltageF = getVoltage();
-  if (voltageF > 3.0 && voltageF < 3.8) {
-        if (batteryWarningEnd == 0) batteryWarningEnd = 5000 + getTimeInMillis();
-        else if (batteryWarningEnd < getTimeInMillis()) {
-          heavySleep();
-          drawString(gameBuff,(char*)"DEEPSLEEP!",0,gameBuff->HEIGHT-16,0xE0,0);
-        }
+	// voltageF = getVoltage();
+  // if (voltageF > 3.0 && voltageF < 3.8) {
+  //       if (batteryWarningEnd == 0) batteryWarningEnd = 5000 + getTimeInMillis();
+  //       else if (batteryWarningEnd < getTimeInMillis()) {
+  //         heavySleep();
+  //         drawString(gameBuff,(char*)"DEEPSLEEP!",0,gameBuff->HEIGHT-16,0xE0,0);
+  //       }
         
-        drawString(gameBuff,(char*)"LOW BATTERY!",0,0,0xE0,0);
-        drawString(gameBuff,(char*)"PLEASE CHARGE!",0,16,0xE0,0);
-        return;
-  }
+  //       drawString(gameBuff,(char*)"LOW BATTERY!",0,0,0xE0,0);
+  //       drawString(gameBuff,(char*)"PLEASE CHARGE!",0,16,0xE0,0);
+  //       return;
+  // }
 
   calcFPS();
   if (gameBuff->consoleBuffer != nullptr)

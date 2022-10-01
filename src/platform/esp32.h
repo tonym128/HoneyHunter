@@ -36,23 +36,25 @@ int readAnalogSensorRaw(int pin)
   return inputVal;
 }
 
-static int vref = 1100;
-static float battery_voltage = 0.0f;
+// static int vref = 1100;
+// static float battery_voltage = 0.0f;
 static uint64_t timeStamp = 0;
 
 float getVoltage()
 {
-  if (millis() - timeStamp > 2000)
-  {
-    float v = ((float)analogRead(ADC_PIN) / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
-    if (v > 0)
-    {
-      battery_voltage = v;
-    }
-    timeStamp = millis();
-  }
+	return 0.0;
 
-  return battery_voltage;
+  // if (millis() - timeStamp > 2000)
+  // {
+  //   float v = ((float)analogRead(ADC_PIN) / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
+  //   if (v > 0)
+  //   {
+  //     battery_voltage = v;
+  //   }
+  //   timeStamp = millis();
+  // }
+
+  // return battery_voltage;
 }
 
 byte getReadShiftAnalog()
@@ -179,13 +181,6 @@ static void sendToScreen()
   tft.endWrite();
 }
 
-void format()
-{
-  // When in doubt... format!
-  Serial.println("Format SPIFFS");
-  SPIFFS.format();
-}
-
 int print_wakeup_reason()
 {
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -229,11 +224,17 @@ void heavySleep()
 
 void gameInit()
 {
-  Serial.println("gameInit");
+  tft.begin();            // initialize a ST7789 chip
+  tft.setSwapBytes(true); // Swap the byte order for pushImage() - corrects endianness
+  tft.fillScreen(TFT_BLACK);
+ 
   // setupBLE();
-  Serial.println("Screen Init");
-
+  Serial.begin(115200);
+  Serial.println("gameInit");
+ 
   // Button Setup for built in buttons
+  Serial.println("buttonInit");
+
   btn1.setPressedHandler([](Button2 &b) {
     btn1Press = true;
   });
@@ -251,27 +252,23 @@ void gameInit()
   });
 
   // VRef Setup for Voltage
-  pinMode(ADC_PIN, INPUT);
-  esp_adc_cal_characteristics_t adc_chars;
-  esp_adc_cal_value_t val_type = esp_adc_cal_characterize((adc_unit_t)ADC_UNIT_1, (adc_atten_t)ADC1_CHANNEL_6, (adc_bits_width_t)ADC_WIDTH_BIT_12, 1100, &adc_chars);
-  //Check type of calibration value used to characterize ADC
-  if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF)
-  {
-    Serial.printf("eFuse Vref:%u mV\n", adc_chars.vref);
-    vref = adc_chars.vref;
-  }
-  else if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP)
-  {
-    Serial.printf("Two Point --> coeff_a:%umV coeff_b:%umV\n", adc_chars.coeff_a, adc_chars.coeff_b);
-  }
-  else
-  {
-    Serial.println("Default Vref: 1100mV");
-  }
-
-  tft.begin();            // initialize a ST7789 chip
-  tft.setSwapBytes(true); // Swap the byte order for pushImage() - corrects endianness
-  tft.fillScreen(TFT_BLACK);
+  // pinMode(ADC_PIN, INPUT);
+  // esp_adc_cal_characteristics_t adc_chars;
+  // esp_adc_cal_value_t val_type = esp_adc_cal_characterize((adc_unit_t)ADC_UNIT_1, (adc_atten_t)ADC1_CHANNEL_6, (adc_bits_width_t)ADC_WIDTH_BIT_12, 1100, &adc_chars);
+  // //Check type of calibration value used to characterize ADC
+  // if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF)
+  // {
+  //   Serial.printf("eFuse Vref:%u mV\n", adc_chars.vref);
+  //   vref = adc_chars.vref;
+  // }
+  // else if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP)
+  // {
+  //   Serial.printf("Two Point --> coeff_a:%umV coeff_b:%umV\n", adc_chars.coeff_a, adc_chars.coeff_b);
+  // }
+  // else
+  // {
+  //   Serial.println("Default Vref: 1100mV");
+  // }
 
   // Serial.println("Input Init");
   // TOUCH_SENSE = getRawInput();
@@ -288,77 +285,7 @@ void gameInit()
   //   Serial.println(TOUCH_SENSE[i]);
   // }
 
-  Serial.println("SPIFFS Init");
-  if (!SPIFFS.begin(true))
-  {
-    Serial.println("Mount Failed");
-    bool formatted = SPIFFS.format();
-    while (!formatted) {
-      Serial.println("Failed formatted");
-      formatted = SPIFFS.format();
-      gameSleep(1000);
-    }
-    Serial.println("File formatted");
-    return;
-  }
-
-  Serial.println("File system mounted");
-}
-
-char *gameLoadFile(char *fileName)
-{
-  Serial.print("Loading file : ");
-  Serial.println(fileName);
-  char *prepend = (char *)malloc(strlen(fileName) + 2);
-  sprintf(prepend, "/%s", fileName);
-  fs::File file = SPIFFS.open(prepend, "r");
-  free(prepend);
-
-  if (!file)
-  {
-    Serial.println("Failed to open file for reading");
-    return nullptr;
-  }
-
-  if (file.size() == 0)
-  {
-    Serial.println("Empty file");
-    return nullptr;
-  }
-
-  char *fileData = (char *)malloc(file.size() + 1);
-  file.readBytes(fileData, file.size());
-  fileData[file.size()] = '\0';
-  return fileData;
-}
-
-bool gameSaveFile(char *fileName, char *data)
-{
-  Serial.print("Saving file :");
-  Serial.println(fileName);
-  char *prepend = (char *)malloc(strlen(fileName) + 2);
-  sprintf(prepend, "/%s", fileName);
-  fs::File file = SPIFFS.open(prepend, FILE_WRITE);
-  free(prepend);
-
-  if (!file)
-  {
-    Serial.println("There was an error opening the file for writing");
-    return false;
-  }
-
-  if (file.print(data))
-  {
-    Serial.println("File was written");
-  }
-  else
-  {
-    Serial.println("File write failed");
-    return false;
-  }
-
-  file.close();
-  return true;
+  Serial.println("gameInit Complete");
 }
 
 const char *getDevicePlatform()
